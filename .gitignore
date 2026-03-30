@@ -1,15 +1,15 @@
 # Build artifacts
-    target/
-    *.class
-    *.jar
-    
-    # IDE settings
-    .idea/
-    *.iml
-    
-    # OS files
-    .DS_Store
-    Thumbs.db
-    
-    # Environment
-    .env
+target/
+*.class
+*.jar
+
+# IDE settings
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
