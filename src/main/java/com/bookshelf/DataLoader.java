@@ -2,18 +2,17 @@ package com.bookshelf;
 
 import com.bookshelf.entity.Book;
 import com.bookshelf.entity.ReadingStatus;
-import com.bookshelf.repository.BookRepository;
+import com.bookshelf.service.BookService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DataLoader implements CommandLineRunner {
 
-    private final BookRepository bookRepository;
+    private final BookService bookService;  // теперь зависит от сервиса
 
-    // Dependency Injection — Spring подставит BookRepository
-    public DataLoader(BookRepository bookRepository) {
-        this.bookRepository = bookRepository;
+    public DataLoader(BookService bookService) {
+        this.bookService = bookService;
     }
 
     @Override
@@ -35,7 +34,6 @@ public class DataLoader implements CommandLineRunner {
         book2.setPageCount(464);
         book2.setPublishYear(2019);
         book2.setLanguage("Русский");
-        book2.setReadingStatus(ReadingStatus.IN_PROGRESS);
 
         Book book3 = new Book();
         book3.setTitle("Чистый код");
@@ -45,7 +43,6 @@ public class DataLoader implements CommandLineRunner {
         book3.setPageCount(464);
         book3.setPublishYear(2013);
         book3.setLanguage("Русский");
-        book3.setReadingStatus(ReadingStatus.COMPLETED);
 
         Book book4 = new Book();
         book4.setTitle("Паттерны проектирования");
@@ -65,29 +62,55 @@ public class DataLoader implements CommandLineRunner {
         book5.setPublishYear(2020);
         book5.setLanguage("Русский");
 
-        // Сохраняем в базу данных
-        bookRepository.save(book1);
-        bookRepository.save(book2);
-        bookRepository.save(book3);
-        bookRepository.save(book4);
-        bookRepository.save(book5);
+        // Сохраняем через сервис — бизнес-логика применяется
+        bookService.createBook(book1);
+        bookService.createBook(book2);
+        bookService.createBook(book3);
+        bookService.createBook(book4);
+        bookService.createBook(book5);
 
-        // Выводим в консоль для проверки
-        System.out.println("=== Загружено книг: " + bookRepository.count() + " ===");
+        // --- Проверяем методы сервиса ---
 
-        // Проверяем query-метод
+        System.out.println("=== Загружено книг: " + bookService.getAllBooks().size() + " ===");
+
         System.out.println("\n--- Книги издательства 'Питер' ---");
-        bookRepository.findByPublisher("Питер")
+        bookService.searchBooks("код")
                 .forEach(b -> System.out.println("  " + b.getTitle()));
 
-        // Проверяем поиск по названию
         System.out.println("\n--- Поиск по 'java' ---");
-        bookRepository.findByTitleContainingIgnoreCase("java")
+        bookService.searchBooks("java")
                 .forEach(b -> System.out.println("  " + b.getTitle()));
 
-        // Проверяем фильтр по статусу
-        System.out.println("\n--- Книги со статусом COMPLETED ---");
-        bookRepository.findByReadingStatus(ReadingStatus.COMPLETED)
+        System.out.println("\n--- Смена статуса ---");
+        Book updated = bookService.updateReadingStatus(2L, ReadingStatus.IN_PROGRESS);
+        System.out.println("  " + updated.getTitle() + " → " + updated.getReadingStatus());
+
+        updated = bookService.updateReadingStatus(3L, ReadingStatus.COMPLETED);
+        System.out.println("  " + updated.getTitle() + " → " + updated.getReadingStatus());
+
+        System.out.println("\n--- Книги со статусом NOT_READ ---");
+        bookService.getBooksByStatus(ReadingStatus.NOT_READ)
                 .forEach(b -> System.out.println("  " + b.getTitle()));
+
+        // --- Проверка бизнес-правила: дубликат ISBN ---
+        System.out.println("\n--- Проверка: дубликат ISBN ---");
+        try {
+            Book duplicate = new Book();
+            duplicate.setTitle("Дубликат");
+            duplicate.setIsbn("978-5-6041394-3-5");  // такой ISBN уже есть у книги 2
+            bookService.createBook(duplicate);
+            System.out.println("  ОШИБКА: дубликат не обнаружен!");
+        } catch (Exception e) {
+            System.out.println("  OK: " + e.getMessage());
+        }
+
+        // --- Проверка бизнес-правила: книга не найдена ---
+        System.out.println("\n--- Проверка: книга не найдена ---");
+        try {
+            bookService.getBookById(999L);
+            System.out.println("  ОШИБКА: исключение не брошено!");
+        } catch (Exception e) {
+            System.out.println("  OK: " + e.getMessage());
+        }
     }
 }
