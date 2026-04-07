@@ -5,7 +5,7 @@ PDF storage, full-text search, and publisher release monitoring.
     
 ## Tech Stack
 
-- Java 21
+- Java 25
 - Spring Boot
 - PostgreSQL
 - Thymeleaf
